@@ -1,20 +1,58 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "sqlite"
-    url      = env("DATABASE_URL")
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+//models
 
-    @@index([name])
+
+enum UserRole {
+  EMPLOYEE
+  MANAGER
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  role         UserRole @default(EMPLOYEE)
+  managerId    Int?     @unique
+  manager      User?    @relation("ManagerToUser", fields: [managerId], references: [id])
+  predecessor  User?    @relation("ManagerToUser")
+  tasks        UsersOnTasks[]
+  assignedTasks Task[]   @relation("AssignerToTask")
+}
+
+//model i task imaju many to many
+
+model UsersOnTasks{
+  task       Task     @relation(fields: [taskId], references: [id])
+  taskId     Int // relation scalar field (used in the `@relation` attribute above)
+  user   User @relation(fields: [userId], references: [id])
+  userId Int // relation scalar field (used in the `@relation` attribute above)
+  assignedAt DateTime @default(now())
+  @@id([taskId, userId])
+
+}
+
+enum Status {
+  TODO
+  INPROGRESS
+  FINISHED
+}
+
+model Task {
+  id          Int       @id @default(autoincrement())
+  title       String
+  status      Status
+  description String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  Users       UsersOnTasks[]
+  assigner    User      @relation("AssignerToTask", fields: [assignerId], references: [id])
+  assignerId  Int
 }
